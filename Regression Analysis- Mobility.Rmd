@@ -1,0 +1,270 @@
+---
+title: 'Regression Analysis: Mobility'
+author: "Akram Nour"
+date: "9/05/2022"
+output:
+  html_document:
+    df_print: paged
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+We will use the following data set whose observations are various counties in the U.S. The outcome variable of interest is the "mobility" variable, which is a measure of the causal effect of growing up in a county on a person's likelihood to attain an income in the top 25% of the income distribution. This measure is taken from the Raj Chetty et. al paper, "Where is the Land of Opporunity? The Geography of Intergenerational Mobility in the United States" (AER, 2014).
+
+The other variables in this dataset are various demographic characteristics of these counties taken from the 2015 CPS (Current Population Survey).
+
+Non-Numeric Variables:
+
+-   cz_name: County Zone Name
+-   stateabbrv: State Abbreviation
+-   name: County Names
+
+Numeric Variables:
+
+-   population: The population of the county
+-   density: The poulation density of the county (number of people per square mile)
+-   male: The percentage of the county's population that is male
+-   white: The percentage of the county's population that reports as white
+-   black: The percentage of the county's population that reports as black
+-   amind: The percentage of the county's population that reports as American Indian
+-   asian: The percentage of the county's population that reports as asian
+-   highschool: The percentage of the county's population that has graduated highschool
+-   college: The percentage of the county's population that has graduated college
+-   dropout: The percentage of the county's population that has droppped out of college
+-   labforce: The percentage of the county's population that is participating in the labor force
+-   manufacturing: The percentage of the county's population that works in manufacturing
+-   income: The average income of the county
+-   gini: The county's gini coeffecient (a measure of income inequality within the county, higher = more unequal)
+-   rentpct: The average rent as a percentage of income in the county
+-   poverty: The percentage of the county's population who are living below the federal poverty line
+
+We would like to explore the (associative!) relationship between these demographic variables and county mobility rates.
+
+```{r mobility, include = FALSE}
+rm(list = ls())
+
+data <- read.csv("https://raw.githubusercontent.com/mnavjeev/Econ103-Summer-2021/main/Final%20Project/mobility_final.csv", skipNul = TRUE)
+
+attach(data)
+```
+
+## Single Linear Regression
+
+For this section, we will investigate the relationship between average rent as a percentage of income and county mobility rates.
+
+```{r rent1, include = TRUE}
+# Put your plot here and discuss below
+plot(data$rentpct, data$mobility, xlab = "Rent (as a % of income)", ylab = "Mobility Rates", main = "Rent Pct vs County Mobility Rates")
+
+```
+
+When looking at the relationship between average rent as a percentage of income and county mobility rates, there's a negative association, meaning that as the average rent as a percentage of income in a county increases, its mobility rate decreases. In terms of linearity, there's a weak, negative, linear association between the two variables.
+
+## Exploratory Data Analysis
+
+```{r EDA, include = TRUE}
+# Code for sample mean, median, and variance of rentpct
+rentpct_samplemean <- mean(data$rentpct)
+rentpct_samplemean
+
+rentpct_samplemedian <- median(data$rentpct)
+rentpct_samplemedian
+
+rentpct_samplevariance <- var(data$rentpct)
+rentpct_samplevariance
+
+# Code for sample mean, median, and variance of mobility
+mobility_samplemean <- mean(data$mobility)
+mobility_samplemean
+
+mobility_samplemedian <- median(data$mobility)
+mobility_samplemedian
+
+mobility_samplevar <- var(data$mobility)
+mobility_samplevar
+
+```
+
+We can see that for average rent as percentage of income, its sample mean is 29.68362, its sample median is 29.5, and its sample variance is 13.45944. For mobility, the sample mean is 0.1052577, the sample median is 0.08697267, and the sample variance is 0.2272118
+
+## Linear Model
+
+Next, let's formally investigate this relationship between average rent as a percentage of income and county mobility rates by running a linear regression of mobility against rentpct.
+
+```{r lm1, include = TRUE}
+# Code for linear regression
+regout <- lm(mobility ~ rentpct, data)
+summary(regout)
+
+regout$coefficients[1] + regout$coefficients[2]*27
+```
+
+Looking at the summary, we can see that a unit increase in average rent as a percentage of income will result in a 0.065 decrease in mobility. We can also reject the null hypothesis that rentpct has a positive association with mobility rates because the t-value = 25.31 is greater than the significance level of 0.01. Furthermore, the p-value is 2e-16 which is much less than the significance level of 0.01 so we can reject the null once again.The R\^2 of this regression is approximately 0.25. This means that 25% of the variability in the response variable (mobility) is explained by the explanatory variable (rent as a percentage of income). The predicted value of mobility for a county who's average rent as a percentage of income is 27, is approximately .28.
+
+## Visualizing our regression line
+
+Now let's visualize this.
+
+```{r lm2, include = TRUE}
+# Scatterplot
+plot(data$rentpct, data$mobility, xlab = "Rent (as a % of income)", ylab = "Mobility Rates", main = "Rent Pct vs County Mobility Rates")
+curve(regout$coefficients[1] + regout$coefficients[2]*x, add = TRUE)
+
+```
+
+The assumption of constant variance of the residuals (Homoscedasticity) is violated. Visualizing the scatter plot, we can see that the variance isn't uniform and spreads out at the ends.
+
+#### We cannot interpret these results as evidence for a causal relationship. It's possible that there are confounding variables. A potential confounding factor within the data set that might be biasing the coefficient on rentpct downwards is the population of college dropouts. It would make sense that as the population of college dropouts increases, the average rent as a percentage of income would increase as well. Another potential confounding factor but outside the data set is the population of people who grew up in a single-parent household. As that population increases, it's possible that so would rent as a percentage of income.
+
+## Multiple Linear Regression
+
+#### Model Selection I
+
+#### Exploratory Data Analysis
+
+```{r meda2, include = TRUE}
+# Include code for plotting below. 
+plot(data$rentpct, data$mobility, xlab = "Rent (as a % of income)", ylab = "Mobility Rates", main = "Avg. Rent vs County Mobility Rates")
+plot(data$gini, data$mobility, xlab = "Income Inequality", ylab = "Mobility Rates", main = "Income Inequality Rates vs County Mobility Rates")
+plot(data$college, data$mobility, xlab = "Percentage of College Graduates", ylab = "Mobility Rates", main = "% of College Graduates vs County Mobility Rates")
+
+```
+
+Before visualizing each regression, I'm expecting to see a negative relationship for rentpct and income inequality. But for the population of college graduates, I'd expect a positive relationship. After plotting each one, I'm seeing a weak, negative, linear association between the explanatory variables, rentpct, abd income inequality & mobility. To my surprise, there seems to be a non-linear association between population of college graduates and mobility and it's very weakly positive.
+
+#### Multicollinearity
+
+```{r meda3, include = TRUE}
+# If needed, get help by running the below line
+?cor
+
+# Calculate correlation coeffecients
+cor(data$gini, data$rentpct)
+cor(data$gini, data$college)
+cor(data$college, data$rentpct)
+
+```
+
+There doesn't seem to be a multicollinearity problem between any of the explanatory variables. The explanatory variables, gini and rentpct have a higher correlation coefficient than the rest, but not significant enough. Because the correlation coefficient is approximately 0.43, roughly 16% of the variance in rentpct is explained by gini. Generally, a high correlation coefficient can dramatically change a regression model if the affected variables are included. This will make it harder to identify statistically significant independent variables.
+
+#### Regression Implementation
+
+We will regress county mobility rates against the 3 variables.
+
+```{r mlr, include = TRUE}
+# Linear Regression Code
+Nregout <- lm(data$mobility ~ data$rentpct + data$gini + data$college, data)
+summary(Nregout)
+
+regsum <- summary(Nregout)
+
+regsum$r.squared
+
+# Hypothesis Testing Code
+
+regsum$coefficients
+b2 <- regsum$coefficients[3,1]
+se2 <- regsum$coefficients[3,2]
+
+teststat <- ((b2)/se2)
+teststat
+
+pvalue <- 2*(1-pt(abs(teststat), 1748))
+pvalue
+tcr <- qt(1-.01/2, 1748)
+tcr
+
+```
+
+Looking at the regression, we can see that a unit increase in rentpct will result in a decrease of .048 in mobility. A unit increase in gini (measure of income inequality) will result in a decrease of approximately 5 in mobility. Finally, a unit increase in the population of college graduates will result in an increase of 0.83 in mobility. It's clear that introducing new variables, accounted for a less drastic slope coefficient for rentpct which makes sense if we consider the correlation between rentpct and gini from earlier. Looking at R\^2, we can see that about 37% of the variability in mobility can be explained by the explanatory variables, "gini", "rentpct", and "college."
+
+Because I expected a negative relationship between gini and mobility, I'm interested in testing the significance of beta2:
+
+$$H_0: \beta_2 = 0 \hspace{0.5 in} H_1: \beta_2 \ne 0.$$the test statistic is equal to -16.74 which is less than -2.579 indicating that we can reject the null hypothesis. Furthermore, the p value is 0 which is less than alpha so we reject again.
+
+```{r plot2, include = TRUE}
+# Code for plotting below
+
+data.red <- data[data$gini >= mean(data$gini) & data$college >= mean(data$college),]
+
+regout2 <- lm(mobility ~ rentpct, data.red)
+summary(regout2)
+
+plot(data.red$rentpct, data.red$mobility, xlab = "Income Inequality Rates", ylab = "Mobility Rates", main = "Income Inequality vs County Mobility with Avg. of gini/college grad. const")
+
+plot(regout2)
+
+```
+
+Using the "Residual vs Fitted" plot, we can see that the variance is pretty consistent and so, homoscedasticity is not violated.
+
+#### Hypothesis Testing
+
+Use the model above to test the null hypothesis that the sum of all the slope coeffecients is equal to one against the alternative that it is not equal to one. Do we reject the null hypothesis at level $\alpha = 0.05$?
+
+```{r hyp1, include = TRUE}
+# Code for hypothesis testing
+regsum_red <- summary(regout2)
+regsum_red
+
+attributes(regsum_red)
+
+regsum_red$coefficients
+
+lambda <- 2.60892 + -0.005816962 + 1.414783 + -6.224035
+lambda
+
+n <- 369
+
+vcov(regout2)
+
+var <- .0518 + 0.773 + 2*(-0.0428)
+
+se <- sqrt(var)
+
+tstat <- ((lambda - 1)/se)
+tstat
+
+pvalue <- 2*(1-pnorm(tstat))
+pvalue
+
+
+```
+
+Using the variance-covariance matrix, I was able to find the variance and standard error for what we're testing for, lamba. At level 0.05, because -3.729 is less than the confidence level, -1.96, we can reject the null. The p-value is close to 2 which is larger and so, once again, we reject the null that the sum of all the slope coeffecients is equal to one.
+
+#### Model Selection II
+
+Consider adding three more terms to this model. These terms could be new variables from the dataset, transformations of your existing terms, or interaction terms. For each additional term, provide a short justification for why you are considering adding this specific term. The justification could be based on the scatter plots above or some economic theory justification (diminishing marginal returns, etc.)
+
+Re-run your regression with all these transformed terms (as well as the original terms). Is your adjusted R\^2 higher or lower than before? Run an F-test to determine whether adding these new terms significantly increased the explanatory power of the model. State your null hypothesis and alternative hypothesis in terms of the full model parameters. Use level $\alpha = 0.1$ and interpret the conclusions of this test in context.
+
+Put your conclusions below this code chunk.
+
+```{r model2, include = TRUE}
+# Code for new model with transformations
+newregout <- lm(data$mobility ~ data$rentpct + data$college + data$gini + data$black + data$income + data$white, data)
+newregsum <- summary(newregout)
+newregsum
+# Code for F-Test
+SSER <- sum(regout$residuals^2)  # restricted sum of squares
+SSEU <- sum(newregout$residuals^2)  # unrestricted sum of squares
+
+df <- nrow(data) - 4
+
+F <- ((SSER - SSEU)/3)/(SSEU/df)
+F
+
+1-pf(F,2,df)
+```
+
+I added the black population, white population, and income as variables to increase the R-squared value of the model. This model has a better adjusted R-squared value of 0.554.
+
+The p-value is 0 which is less than the significance level, meaning that we can reject the null that the new variables did not significantly increase the explanatory power of the model. The model with the added terms is better.
+
+#### Conclusion
+
+In conclusion, by fixing the two variables, gini (income inequality rate) and college, population of college graduates to their mean values, rent as a percentage of income has less of an effect on the mobility rate. This is interesting because at the beginning, our first linear model might have suggested that there was a clear negative association between rentpct and mobility. But by accounting for other significant factors, we can see that slope coefficient for rentpct was being biased downwards. Surprisingly, the population of college graduates had less significance than I thought.
